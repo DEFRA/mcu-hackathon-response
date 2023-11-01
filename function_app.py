@@ -22,9 +22,11 @@ def caterpillar_function(myblob: func.InputStream, outputblob: func.Out[str]):
     
     content = myblob.read().decode('utf-8')
     logging.info(f"Blob content: {content}")
-    openaiprompt1 = "Parse this email object and analyse the sentiment and topic of the email body and subject line and populate the sentiment, topic and requiresResponse properties."
-    openaiprompt2 = "The only response I require is the original json message in the exact same format but update the json message populating the \'topic\', \'sentiment\' and \'requiresResponse\' properties based on the analysis of the content. Where a response is required provide a polite suggested response."
-    openairequest = " ".join([openaiprompt1, content, openaiprompt2])
+    openaiprompt1 = "Parse this email object and analyse the sentiment and topic of the email body and generate a json response message."
+    openaiprompt2 = "The sendersEmotion should be selected from one of the following range of emotions (Appreciative, Concerned, Frustrated, Supportive, Angry, Pleased, Worried, Thankful, Dissatisfied, Hopeful). The only response I require is the original json message in the exact same format but update the json message populating the 'topic', 'sentiment', 'requiresResponse', 'suggestedResponse', 'containsSensitiveData', 'confidential', sendersEmotion' properties based on the analysis of the content. Where a response is required provide a polite suggested response. Do not provide any text in the response other than the json message which should be provided in the following format:"
+    openaiprompt3 = '{/"new/": true,/"sender/": /"aPerson@email.com/",/"received/": /"31/10/2023/",/"hasAttachments": true,/"attachments/": {/"1": /"myphoto.jpeg/",/"2": /"myletter.docx/",},/"subject/": /"Feedback relating to the hack session/",/"body/": /"<p>Dear Paul,</p><p>This is a sample email to reach out to tell you im very happy with all the sweets and coffee available at the sponsored hack session.</p><p>Regards</p><p>Nick (hacker)</p>/",/"topic/": hackathon/"sentiment": feedback/"requiresResponse": false,/"suggestedResponse": /"Hi Nick, thank you for your email, im glad you enjoyed the session. Regards Paul/",/"containsSensitiveData/": false,/"confidential/": false,/"sendersEmotion/" /"Appreciative/"}'
+
+    openairequest = " ".join([openaiprompt1, content, openaiprompt2, openaiprompt3])
     logging.info(f"OpenAI request: {openairequest}")
 
     apim_gateway_url = 'https://genaiapim.azure-api.net' 
@@ -50,9 +52,12 @@ def caterpillar_function(myblob: func.InputStream, outputblob: func.Out[str]):
 
     content = full_openai_chat_response.choices[0].message.content
 
-    print(f'OpenAI response: {content}')
+    # only get { ... } part of the response
+    responsecontent = content[content.find('{'):content.rfind('}')+1]
 
-    outputblob.set(content)
+    print(f'OpenAI response: {responsecontent}')
+
+    outputblob.set(responsecontent)
 
     
 
